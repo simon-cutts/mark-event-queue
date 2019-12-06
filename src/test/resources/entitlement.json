@@ -1,0 +1,15 @@
+{
+  "mark": "AFC 6",
+  "eventTime": "2019-11-27T13:04:32.025Z",
+  "price": 299,
+  "entitlement": {
+    "certificateNo": "CERT2345",
+    "certificateTime": "2019-11-27T13:04:32.005Z",
+    "purchaserName": "Felicity Jones",
+    "addLine1": "2 My Street",
+    "addLine2": "Redwood",
+    "postTown": "Swansea",
+    "postcode": "SW1 4RT",
+    "nomineeName": "Mr John Jones"
+  }
+}
