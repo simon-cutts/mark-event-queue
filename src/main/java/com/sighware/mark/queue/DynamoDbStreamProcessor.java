@@ -9,12 +9,11 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sighware.mark.server.event.RegistrationNumberEvent;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,9 +25,10 @@ import java.util.Map;
 public class DynamoDbStreamProcessor implements
         RequestHandler<DynamodbEvent, String> {
 
+    public static final String EVENT_ID = "eventId";
     private static final String FAN_OUT_SQS_QUEUE_URL = System.getenv("FAN_OUT_SQS_QUEUE_URL");
+    private static final String MARK_EVENT = "mark-event";
     private final AmazonSQS sqs = AmazonSQSClientBuilder.defaultClient();
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public String handleRequest(DynamodbEvent ddbEvent, Context context) {
 
@@ -49,24 +49,40 @@ public class DynamoDbStreamProcessor implements
 
                         System.out.println(json);
 
+                        // Pass the eventId as the unique identifier
+                        String eventId = getEventId(json);
+
+                        Map<String, MessageAttributeValue> attributes = new HashMap<>();
+                        attributes.put(EVENT_ID, new MessageAttributeValue()
+                                .withDataType("String")
+                                .withStringValue(eventId));
+
                         // Now write event to SQS
-                        try {
-                            RegistrationNumberEvent event = objectMapper.readValue(json, RegistrationNumberEvent.class);
-
-                            SendMessageRequest msg = new SendMessageRequest()
-                                    .withQueueUrl(FAN_OUT_SQS_QUEUE_URL)
-                                    .withMessageGroupId("mark-event")
-                                    .withMessageDeduplicationId(event.getEventId())
-                                    .withMessageBody(json);
-                            sqs.sendMessage(msg);
-
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
+                        SendMessageRequest msg = new SendMessageRequest()
+                                .withQueueUrl(FAN_OUT_SQS_QUEUE_URL)
+                                .withMessageGroupId(MARK_EVENT)
+                                .withMessageDeduplicationId(eventId)
+                                .withMessageAttributes(attributes)
+                                .withMessageBody(json);
+                        sqs.sendMessage(msg);
                     }
                 }
             }
         }
         return "Ok";
+    }
+
+    /**
+     * Get the eventId GGUID from the json, for example: {"eventId":"90a9a11e-95b2-4c0d-aef3-53a15bfbda8f","createTime:" ..."
+     *
+     * @param json
+     * @return
+     */
+    String getEventId(String json) {
+        json = json.replace(" ", "").replace("\n", "");
+        int s = json.indexOf("eventId\":\"") + 10;
+        String trim = json.substring(s);
+        s = trim.indexOf(",") - 1;
+        return trim.substring(0, s);
     }
 }

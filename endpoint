@@ -1,16 +1,16 @@
 WARNING! These are just my run notes
 
 mvn clean package ; sam package --output-template-file packaged.yml --s3-bucket customer-record \
-    ; sam deploy --template-file ./packaged.yml --stack-name mark-event-q --capabilities CAPABILITY_IAM \
-    ; aws cloudformation describe-stacks --stack-name mark-event-q
+    ; sam deploy --template-file ./packaged.yml --stack-name mark-event-queue --capabilities CAPABILITY_IAM \
+    ; aws cloudformation describe-stacks --stack-name mark-event-queue
 
 time  curl https://vrda2e6k60.execute-api.eu-west-2.amazonaws.com/Prod
 
-aws cloudformation describe-stack-events --stack-name mark-event-q
+aws cloudformation describe-stack-events --stack-name mark-event-queue
 
-aws cloudformation delete-stack --stack-name mark-event-q
+aws cloudformation delete-stack --stack-name mark-event-queue
 
-sam logs -n SomApiAppFunction --stack-name mark-event-q
+sam logs -n SomApiAppFunction --stack-name mark-event-queue
 
 
 time curl -H "Content-Type: application/json" -X POST https://vrda2e6k60.execute-api.eu-west-2.amazonaws.com/Prod/mark/v1/entitlement -d '

@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: AWS Mark - mark-event-q
+Description: AWS Mark - mark-event-queue
 
 Globals:
   Api:
@@ -14,13 +14,15 @@ Resources:
     Properties:
       Handler: com.sighware.mark.queue.DynamoDbStreamProcessor::handleRequest
       Runtime: java8
-      CodeUri: target/mark-event-q.jar
+      CodeUri: target/mark-event-queue.jar
       MemorySize: 1024
       Environment:
         Variables:
           FAN_OUT_SQS_QUEUE_URL: !Ref FanOutQueue
       Policies:
+        - AWSLambdaBasicExecutionRole
         - AWSLambdaDynamoDBExecutionRole
+        - AWSLambdaSQSQueueExecutionRole
       Events:
         Stream:
           Type: DynamoDB
@@ -34,13 +36,17 @@ Resources:
     Properties:
       Handler: com.sighware.mark.queue.FanOut::handleRequest
       Runtime: java8
-      CodeUri: target/mark-event-q.jar
+      CodeUri: target/mark-event-queue.jar
       MemorySize: 1024
       Environment:
         Variables:
           FAN_OUT_SQS_QUEUE_URL: !Ref FanOutQueue
+          FAN_CLIENT_OUT_SQS_QUEUE_URL: !Ref FanOutClientQueue
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSLambdaSQSQueueExecutionRole
       Events:
-        SqsJobQueue:
+        FanOutJobQueue:
           Type: SQS
           Properties:
             Queue: !GetAtt FanOutQueue.Arn
@@ -64,6 +70,24 @@ Resources:
           Action: "sqs:*"
           Resource: "*"
 
+  FanOutClientQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: MarkFanOutClientQueue.fifo
+      FifoQueue: true
+
+  FanOutClientQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref FanOutClientQueue
+      PolicyDocument:
+        Statement:
+          Effect: Allow
+          Principal: "*"
+          Action: "sqs:*"
+          Resource: "*"
+
 Outputs:
   QueueName:
     Description: "Name of FanOutQueue SQS"
@@ -76,4 +100,16 @@ Outputs:
     Value:
       Fn::GetAtt:
         - "FanOutQueue"
+        - "Arn"
+  ClientQueueName:
+    Description: "Name of client FanOutQueue SQS"
+    Value:
+      Fn::GetAtt:
+        - "FanOutClientQueue"
+        - "QueueName"
+  ClientQueueARN:
+    Description: "ARN of client FanOutQueue SQS"
+    Value:
+      Fn::GetAtt:
+        - "FanOutClientQueue"
         - "Arn"
