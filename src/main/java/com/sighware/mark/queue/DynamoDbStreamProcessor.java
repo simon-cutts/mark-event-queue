@@ -9,18 +9,18 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
-import com.amazonaws.services.sqs.model.MessageAttributeValue;
-import com.amazonaws.services.sqs.model.SendMessageRequest;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Processes new image events from a DynamoDB stream on the RegistrationNumberEvent table.
  * Reads from the DynamoDB stream, converts data to a json RegistrationNumberEvent and then
- * writes the json to the SQS FanOut
+ * writes the json to the SQS FanOut queue
+ *
+ * @author Simon Cutts
  */
 public class DynamoDbStreamProcessor implements
         RequestHandler<DynamodbEvent, String> {
@@ -49,22 +49,7 @@ public class DynamoDbStreamProcessor implements
 
                         System.out.println(json);
 
-                        // Pass the eventId as the unique identifier
-                        String eventId = getEventId(json);
-
-                        Map<String, MessageAttributeValue> attributes = new HashMap<>();
-                        attributes.put(EVENT_ID, new MessageAttributeValue()
-                                .withDataType("String")
-                                .withStringValue(eventId));
-
-                        // Now write event to SQS
-                        SendMessageRequest msg = new SendMessageRequest()
-                                .withQueueUrl(FAN_OUT_SQS_QUEUE_URL)
-                                .withMessageGroupId(MARK_EVENT)
-                                .withMessageDeduplicationId(eventId)
-                                .withMessageAttributes(attributes)
-                                .withMessageBody(json);
-                        sqs.sendMessage(msg);
+                        MessageSender.send(sqs, UUID.fromString(getEventId(json)), json, FAN_OUT_SQS_QUEUE_URL);
                     }
                 }
             }

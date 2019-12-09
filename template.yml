@@ -41,7 +41,11 @@ Resources:
       Environment:
         Variables:
           FAN_OUT_SQS_QUEUE_URL: !Ref FanOutQueue
-          FAN_CLIENT_OUT_SQS_QUEUE_URL: !Ref FanOutClientQueue
+          FAN_CLIENT_OUT_SQS_QUEUE_URL_1: !Ref FanOutClientQueue
+
+          # Enter additional fanout clients using the format below
+#          FAN_CLIENT_OUT_SQS_QUEUE_URL_2:
+#          FAN_CLIENT_OUT_SQS_QUEUE_URL_3:
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSLambdaSQSQueueExecutionRole
