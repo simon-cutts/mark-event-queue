@@ -8,7 +8,7 @@ Globals:
 
 Resources:
   # Lambda listens to a DynamoDB stream on the RegistrationNumberEvent table and converts the
-  # data to json. Wrirtes the json to the FanOut queue
+  # data to json. Writes the json to the FanOut queue
   ProcessDynamoDBStream:
     Type: AWS::Serverless::Function
     Properties:
@@ -31,6 +31,7 @@ Resources:
             BatchSize: 1
             StartingPosition: TRIM_HORIZON
 
+  # Lambda listens to the SQS FanOutQueue and forwards the messages to multiple Fanout queue clients
   FanOut:
     Type: AWS::Serverless::Function
     Properties:

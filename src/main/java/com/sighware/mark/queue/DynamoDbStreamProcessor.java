@@ -25,9 +25,7 @@ import java.util.UUID;
 public class DynamoDbStreamProcessor implements
         RequestHandler<DynamodbEvent, String> {
 
-    public static final String EVENT_ID = "eventId";
     private static final String FAN_OUT_SQS_QUEUE_URL = System.getenv("FAN_OUT_SQS_QUEUE_URL");
-    private static final String MARK_EVENT = "mark-event";
     private final AmazonSQS sqs = AmazonSQSClientBuilder.defaultClient();
 
     public String handleRequest(DynamodbEvent ddbEvent, Context context) {
@@ -58,7 +56,7 @@ public class DynamoDbStreamProcessor implements
     }
 
     /**
-     * Get the eventId GGUID from the json, for example: {"eventId":"90a9a11e-95b2-4c0d-aef3-53a15bfbda8f","createTime:" ..."
+     * Get the eventId UUID from the json, for example: {"eventId":"90a9a11e-95b2-4c0d-aef3-53a15bfbda8f","createTime:" ..."
      *
      * @param json
      * @return
