@@ -17,38 +17,17 @@ Events traverse the event stream to notify downstream clients. The event stream 
 3. The `SQS FIFO Fanout` queue within mark-event-queue maintains the same time ordered sequence of events that can be fanned out to multiple interested clients
 4. The `Lambda Fan out` lambda within mark-event-queue distributes the message events from `SQS FIFO Fanout` queue to all interested `SQS FIFO Client` destinations
 
-### Outstanding Tasks
-
-Stuff for the next iteration:
-
-1. Downstream client (KinesisStreamS3Processor) is not idempotent
-2. Consider rewriting with TypeScript - the cold start times are 6 seconds!
-
 ## Installation
 The application can be deployed in an AWS account using the [Serverless Application Model (SAM)](https://github.com/awslabs/serverless-application-model). 
 
-The example `KinesisStreamS3Processor` lambda client needs an S3 bucket created to store a copy of all events sent to the application. The `template.yml` file in the root folder contains the application definition. Once you've created the bucket, update the bucket name in `template.yml` file, replacing
-```
-  EventBucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      BucketName: "mark-event"
-```
-with
-```
-  EventBucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      BucketName: "<YOUR EVENT BUCKET NAME>"
-```
-To build and install the mark-api application you will need [AWS CLI](https://aws.amazon.com/cli/), [SAM](https://github.com/awslabs/serverless-application-model) and [Maven](https://maven.apache.org/) installed on your computer.
+To build and install the mark-event-queue application you will need [AWS CLI](https://aws.amazon.com/cli/), [SAM](https://github.com/awslabs/serverless-application-model) and [Maven](https://maven.apache.org/) installed on your computer.
 
 Once they have been installed, from the shell, navigate to the root folder of the app and use maven to build a deployable jar. 
 ```
 $ mvn clean package
 ```
 
-This command should generate a `mark-event.jar` in the `target` folder. Now that we have generated the jar file, we can use SAM to package the sam for deployment. 
+This command should generate a `mark-event-queue.jar` in the `target` folder. Now that we have generated the jar file, we can use SAM to package the sam for deployment. 
 
 You will need a deployment S3 bucket to store the artifacts for deployment. Once you have created the deployment S3 bucket, run the following command from the app root folder:
 
@@ -74,14 +53,14 @@ $ aws cloudformation describe-stacks --stack-name <YOUR STACK NAME>
 {
     "Stacks": [
         {
-            "StackId": "arn:aws:cloudformation:eu-west-2:022099488461:stack/mark-event/dccde1a0-1518-11ea-8ce6-02bbe2e31b38",
-            "StackName": "mark-event",
-            "ChangeSetId": "arn:aws:cloudformation:eu-west-2:022099488461:changeSet/awscli-cloudformation-package-deploy-1575303250/d87be7c8-ac7a-4c44-a051-e7dd98185c1c",
-            "Description": "AWS SomApiApp API - mark-event::mark-event-app",
-            "CreationTime": "2019-12-02T15:37:28.681Z",
-            "LastUpdatedTime": "2019-12-02T16:14:15.624Z",
+            "StackId": "arn:aws:cloudformation:eu-west-2:022099488461:stack/mark-event-queue/a57f9bb0-1a79-11ea-8ce6-02bbe2e31b38",
+            "StackName": "mark-event-queue",
+            "ChangeSetId": "arn:aws:cloudformation:eu-west-2:xxxxxxxxxxx:changeSet/awscli-cloudformation-package-deploy-xxxxxxx/6b45482c-9d30-42af-9504-880649b8cc94",
+            "Description": "AWS Mark - mark-event-queue",
+            "CreationTime": "2019-12-09T11:47:15.842Z",
+            "LastUpdatedTime": "2019-12-10T07:15:30.262Z",
             "RollbackConfiguration": {},
-            "StackStatus": "CREATE_COMPLETE",
+            "StackStatus": "UPDATE_COMPLETE",
             "DisableRollback": false,
             "NotificationARNs": [],
             "Capabilities": [
@@ -89,14 +68,24 @@ $ aws cloudformation describe-stacks --stack-name <YOUR STACK NAME>
             ],
             "Outputs": [
                 {
-                    "OutputKey": "ConsumerARN",
-                    "OutputValue": "arn:aws:kinesis:eu-west-2:xxxxxxxxx:stream/RegistrationNumberEventKinesisStream/consumer/RegistrationNumberEventStreamConsumer:1575303290",
-                    "Description": "Stream consumer ARN"
+                    "OutputKey": "ClientQueueARN",
+                    "OutputValue": "arn:aws:sqs:eu-west-2:xxxxxxxx:MarkFanOutClientQueue.fifo",
+                    "Description": "ARN of client FanOutQueue SQS"
                 },
                 {
-                    "OutputKey": "StreamARN",
-                    "OutputValue": "arn:aws:kinesis:eu-west-2:xxxxxxx:stream/RegistrationNumberEventKinesisStream",
-                    "Description": "Kinesis Stream ARN"
+                    "OutputKey": "QueueName",
+                    "OutputValue": "MarkFanOutQueue.fifo",
+                    "Description": "Name of FanOutQueue SQS"
+                },
+                {
+                    "OutputKey": "QueueARN",
+                    "OutputValue": "arn:aws:sqs:eu-west-2:xxxxxxx:MarkFanOutQueue.fifo",
+                    "Description": "ARN of FanOutQueue SQS"
+                },
+                {
+                    "OutputKey": "ClientQueueName",
+                    "OutputValue": "MarkFanOutClientQueue.fifo",
+                    "Description": "Name of client FanOutQueue SQS"
                 }
             ],
             "Tags": [],

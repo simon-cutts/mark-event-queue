@@ -20,11 +20,20 @@ import java.util.UUID;
  */
 public class FanOut implements RequestHandler<SQSEvent, Void> {
 
-    private static final Map<String, String> environment = System.getenv();
-    private static final String FAN_OUT_SQS_QUEUE_URL = System.getenv("FAN_OUT_SQS_QUEUE_URL");
+    private final static String FAN_OUT_SQS_QUEUE_URL = System.getenv("FAN_OUT_SQS_QUEUE_URL");
+    private final static ArrayList<String> CLIENT_QUEUES = new ArrayList<>();
 
     private final AmazonSQS sqs = AmazonSQSClientBuilder.defaultClient();
-    private final ArrayList<String> clientQueueUrl = new ArrayList<>();
+
+    static {
+         // Build the list of fanout SQS client queue destinations
+        Map<String, String> environment = System.getenv();
+        for (Map.Entry<String, String> entry : environment.entrySet()) {
+            if (entry.getKey().startsWith("FAN_OUT_CLIENT_SQS")) {
+                CLIENT_QUEUES.add(entry.getValue());
+            }
+        }
+    }
 
     @Override
     public Void handleRequest(SQSEvent event, Context context) {
@@ -50,25 +59,8 @@ public class FanOut implements RequestHandler<SQSEvent, Void> {
      * @param json
      */
     private void fanout(String eventId, String json) {
-
-        buildSqsDestinations();
-
-        for (String url : clientQueueUrl) {
+        for (String url : CLIENT_QUEUES) {
             MessageSender.send(sqs, UUID.fromString(eventId), json, url);
-        }
-    }
-
-    /**
-     * Build the list of fanout SQS client queues
-     */
-    private void buildSqsDestinations() {
-        if (clientQueueUrl.size() != 0) {
-            return;
-        }
-        for (Map.Entry<String, String> entry : environment.entrySet()) {
-            if (entry.getKey().startsWith("FAN_CLIENT_OUT_SQS")) {
-                clientQueueUrl.add(entry.getValue());
-            }
         }
     }
 }

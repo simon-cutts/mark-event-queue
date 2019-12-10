@@ -44,9 +44,7 @@ public class DynamoDbStreamProcessor implements
 
                     for (Item item : itemList) {
                         String json = item.toJSON();
-
                         System.out.println(json);
-
                         MessageSender.send(sqs, UUID.fromString(getEventId(json)), json, FAN_OUT_SQS_QUEUE_URL);
                     }
                 }
